@@ -22,9 +22,11 @@ Aplikasi web modern, responsif, dan elegan untuk pembuatan nota dan invoice univ
      - **Kalkulasi Pajak & Diskon:** Input persentase pajak (misal 15% atau 11% PPN) dan diskon.
      - **Detail Pembayaran:** Input metode pembayaran, nama bank, nomor rekening, dan kode routing/SWIFT.
      - **Catatan & Watermark:** Pesan penutup untuk klien dan teks *brand* di bagian bawah.
+     - **Lampiran Foto Bukti / Struk (Attachments):** Unggah banyak foto sekaligus (nota bensin, tiket tol, parkir, struk makan tim, dsb.) dengan auto-kompresi gambar cerdas agar file ringan dan hemat memori, dilengkapi input keterangan dan nominal per struk.
    - **Sisi Kanan (Live Preview):**
      - Pratinjau langsung berstandar rasio A4 yang responsif secara *real-time* saat formulir di sisi kiri diisi.
      - Banner lengkung *fluid abstract neon wave* yang elegan (sesuai referensi desain).
+     - Bagian lampiran foto struk/nota tersusun rapi di lembar invoice dengan fitur *Lightbox* (klik untuk memperbesar gambar).
 
 3. **Ekspor Langsung ke PDF (Direct PDF Engine):**
    - Menggunakan engine *client-side* `html2pdf.js` dengan resolusi tinggi (skala 2.5x).

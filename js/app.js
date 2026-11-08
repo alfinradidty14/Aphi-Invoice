@@ -262,6 +262,9 @@ function populateFormWithInvoice(inv) {
 
   // Render items rows in form
   renderFormItems(inv.items || []);
+
+  // Render attachment rows in form
+  renderFormAttachments(inv.attachments || []);
 }
 
 function renderFormItems(items) {
@@ -315,6 +318,129 @@ function handleRemoveItem(itemId) {
   renderLivePreview();
 }
 
+/**
+ * Attachment Form Handlers & Rendering
+ */
+function renderFormAttachments(attachments = []) {
+  const container = document.getElementById('form-attachments-container');
+  const countBadge = document.getElementById('attachment-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${attachments.length} Foto`;
+  }
+  if (!container) return;
+
+  if (attachments.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-3 text-xs text-slate-500 italic">
+        Belum ada foto nota dilampirkan.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = attachments.map((att, idx) => `
+    <div class="att-row p-3 rounded-lg bg-black/40 border border-white/5 space-y-2" data-att-id="${att.id}">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-mono text-teal-400 font-medium">Nota #${idx + 1}</span>
+        <button type="button" class="text-xs text-rose-400 hover:text-rose-300 transition-colors p-1" onclick="handleRemoveAttachment('${att.id}')">
+          Hapus
+        </button>
+      </div>
+
+      <div class="flex gap-3 items-start">
+        <!-- Thumbnail -->
+        <div class="w-16 h-16 rounded-lg overflow-hidden border border-white/10 shrink-0 cursor-pointer relative group bg-black" onclick="openLightbox('${att.id}')">
+          <img src="${att.imageData}" alt="${att.title}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px]">
+            Lihat
+          </div>
+        </div>
+
+        <!-- Inputs for Title, Amount, Date -->
+        <div class="flex-1 space-y-1.5">
+          <input type="text" class="input-dark text-xs att-title" placeholder="Keterangan (e.g. Bensin Mobil 50L, Parkir, Tol)" value="${att.title || ''}" oninput="syncFormToCurrentInvoice()">
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <input type="number" step="any" min="0" class="input-dark text-xs att-amount font-mono" placeholder="Nominal (opsional)" value="${att.amount || ''}" oninput="syncFormToCurrentInvoice()">
+            </div>
+            <div>
+              <input type="date" class="input-dark text-xs att-date" value="${att.date || ''}" oninput="syncFormToCurrentInvoice()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleRemoveAttachment(attId) {
+  if (!currentInvoice?.attachments) return;
+  currentInvoice.attachments = currentInvoice.attachments.filter(a => a.id !== attId);
+  renderFormAttachments(currentInvoice.attachments);
+  renderLivePreview();
+  window.InvoicePdf.showToast('Foto nota lampiran dihapus', 'info');
+}
+
+/**
+ * Compress and resize images via Canvas
+ */
+function compressImage(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Lightbox Modal Controllers
+ */
+function openLightbox(attId) {
+  if (!currentInvoice?.attachments) return;
+  const att = currentInvoice.attachments.find(a => a.id === attId);
+  if (!att) return;
+
+  const modal = document.getElementById('image-lightbox-modal');
+  const img = document.getElementById('lightbox-img');
+  const caption = document.getElementById('lightbox-caption');
+
+  if (modal && img) {
+    img.src = att.imageData;
+    if (caption) {
+      caption.textContent = `${att.title || 'Bukti Struk'}${att.amount ? ' — ' + window.InvoiceCalc.formatCurrency(att.amount, currentInvoice.currency) : ''}`;
+    }
+    modal.classList.remove('hidden');
+  }
+}
+
+function closeLightbox() {
+  const modal = document.getElementById('image-lightbox-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
 function setupFormEventListeners() {
   const form = document.getElementById('invoice-form');
   if (form) {
@@ -329,6 +455,93 @@ function setupFormEventListeners() {
   const btnAddItem = document.getElementById('btn-add-item');
   if (btnAddItem) {
     btnAddItem.addEventListener('click', handleAddItem);
+  }
+
+  // Attachment File Upload
+  const fileInput = document.getElementById('input-attachment-file');
+  if (fileInput) {
+    fileInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0 || !currentInvoice) return;
+
+      currentInvoice.attachments = currentInvoice.attachments || [];
+      window.InvoicePdf.showToast(`Mengunggah & mengompres ${files.length} foto nota...`, 'info');
+
+      for (const file of files) {
+        try {
+          const compressedDataUrl = await compressImage(file, 1200, 0.82);
+          const rawName = file.name.replace(/\.[^/.]+$/, '');
+          currentInvoice.attachments.push({
+            id: 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            title: rawName || 'Nota Transaksi',
+            imageData: compressedDataUrl,
+            date: currentInvoice.issuedDate || new Date().toISOString().split('T')[0],
+            amount: 0
+          });
+        } catch (err) {
+          console.error('Gagal memproses gambar:', err);
+        }
+      }
+
+      fileInput.value = '';
+      renderFormAttachments(currentInvoice.attachments);
+      renderLivePreview();
+      window.InvoicePdf.showToast(`${files.length} foto nota berhasil dilampirkan!`, 'success');
+    });
+  }
+
+  // Dropzone drag-and-drop support
+  const dropzone = document.getElementById('dropzone-attachments');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-teal-500', 'bg-teal-500/10');
+      });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-teal-500', 'bg-teal-500/10');
+      });
+    });
+    dropzone.addEventListener('drop', async (e) => {
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+      if (files.length === 0 || !currentInvoice) return;
+
+      currentInvoice.attachments = currentInvoice.attachments || [];
+      window.InvoicePdf.showToast(`Mengunggah & mengompres ${files.length} foto nota...`, 'info');
+
+      for (const file of files) {
+        try {
+          const compressedDataUrl = await compressImage(file, 1200, 0.82);
+          const rawName = file.name.replace(/\.[^/.]+$/, '');
+          currentInvoice.attachments.push({
+            id: 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            title: rawName || 'Nota Transaksi',
+            imageData: compressedDataUrl,
+            date: currentInvoice.issuedDate || new Date().toISOString().split('T')[0],
+            amount: 0
+          });
+        } catch (err) {
+          console.error('Gagal memproses gambar drop:', err);
+        }
+      }
+
+      renderFormAttachments(currentInvoice.attachments);
+      renderLivePreview();
+      window.InvoicePdf.showToast(`${files.length} foto nota berhasil dilampirkan!`, 'success');
+    });
+  }
+
+  // Lightbox Close Listeners
+  const btnCloseLightbox = document.getElementById('btn-close-lightbox');
+  const lightboxModal = document.getElementById('image-lightbox-modal');
+  if (btnCloseLightbox) btnCloseLightbox.addEventListener('click', closeLightbox);
+  if (lightboxModal) {
+    lightboxModal.addEventListener('click', (e) => {
+      if (e.target === lightboxModal) closeLightbox();
+    });
   }
 }
 
@@ -392,6 +605,20 @@ function syncFormToCurrentInvoice() {
     items.push({ id, description: desc, qty, rate });
   });
   currentInvoice.items = items;
+
+  // Attachments metadata from DOM
+  const attRows = document.querySelectorAll('.att-row');
+  if (currentInvoice.attachments) {
+    attRows.forEach(row => {
+      const id = row.dataset.attId;
+      const att = currentInvoice.attachments.find(a => a.id === id);
+      if (att) {
+        att.title = row.querySelector('.att-title')?.value || '';
+        att.amount = Number(row.querySelector('.att-amount')?.value) || 0;
+        att.date = row.querySelector('.att-date')?.value || '';
+      }
+    });
+  }
 
   renderLivePreview();
 }
@@ -604,6 +831,40 @@ function renderLivePreview() {
       </div>
     </div>
 
+    <!-- Lampiran Bukti Transaksi / Nota Foto (Attachments) -->
+    ${inv.attachments && inv.attachments.length > 0 ? `
+      <div class="mt-12 pt-8 border-t ${borderCol} page-break-inside-avoid">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-[10px] font-bold tracking-widest uppercase mb-1 text-teal-400">LAMPIRAN BUKTI TRANSAKSI & PENGELUARAN</div>
+            <div class="text-sm font-bold ${textBold}">Receipt & Expense Attachments</div>
+          </div>
+          <span class="text-[11px] font-mono px-2.5 py-1 rounded-full ${isDark ? 'bg-teal-500/10 text-teal-300 border border-teal-500/20' : 'bg-slate-100 text-slate-700'}">
+            ${inv.attachments.length} Dokumen / Struk
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          ${inv.attachments.map((att, idx) => `
+            <div class="rounded-xl overflow-hidden border ${borderCol} ${isDark ? 'bg-neutral-900/70' : 'bg-slate-50'} p-3 space-y-2 cursor-pointer hover:border-teal-500/50 transition-all group" onclick="openLightbox('${att.id}')">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold ${textBold} truncate">${att.title || 'Nota #' + (idx + 1)}</span>
+                ${att.amount ? `<span class="font-mono text-[11px] font-bold text-emerald-400">${window.InvoiceCalc.formatCurrency(att.amount, inv.currency)}</span>` : ''}
+              </div>
+              ${att.date ? `<div class="text-[10px] ${textDim}">Tanggal: ${att.date}</div>` : ''}
+              <div class="w-full h-44 rounded-lg overflow-hidden bg-black/50 flex items-center justify-center relative">
+                <img src="${att.imageData}" alt="${att.title || 'Bukti Struk'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5 backdrop-blur-[2px]">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                  Perbesar Foto
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
     <!-- Watermark / Footer Brand -->
     ${inv.brandWatermark ? `
       <div class="mt-16 pt-6 text-center">
@@ -635,4 +896,7 @@ window.handleEditInvoice = handleEditInvoice;
 window.handleDuplicateInvoice = handleDuplicateInvoice;
 window.handleDeleteInvoice = handleDeleteInvoice;
 window.handleRemoveItem = handleRemoveItem;
+window.handleRemoveAttachment = handleRemoveAttachment;
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
 window.syncFormToCurrentInvoice = syncFormToCurrentInvoice;

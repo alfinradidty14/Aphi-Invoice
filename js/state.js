@@ -63,6 +63,7 @@ const SAMPLE_INVOICE = {
   
   // Catatan
   notes: 'Thank you for your business!',
+  attachments: [], // Lampiran foto nota / bukti pengeluaran
   createdAt: '2026-04-02T10:00:00Z',
   updatedAt: '2026-04-02T10:00:00Z'
 };
@@ -159,6 +160,7 @@ class InvoiceStore {
         accountHolder: 'Nama Rekening Anda'
       },
       notes: 'Terima kasih atas kerja sama dan kepercayaannya.',
+      attachments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

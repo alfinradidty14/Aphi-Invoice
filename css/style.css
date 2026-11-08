@@ -138,6 +138,11 @@ body {
   color: #ffffff;
 }
 
+.page-break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 /* Print CSS */
 @media print {
   body {
@@ -159,6 +164,11 @@ body {
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  .page-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   @page {

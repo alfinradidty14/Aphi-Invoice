@@ -426,6 +426,34 @@
               </div>
             </div>
 
+            <!-- SECTION 8: LAMPIRAN FOTO NOTA / STRUK BENSIN DLL (ATTACHMENTS) -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-white/5">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+                  8. Lampiran Foto Nota / Bukti (Bensin, Tol, Parkir, dll)
+                </h3>
+                <span class="text-[10px] text-teal-400 font-mono font-medium" id="attachment-count-badge">0 Foto</span>
+              </div>
+
+              <!-- Upload Button / Dropzone -->
+              <div class="border-2 border-dashed border-white/10 hover:border-teal-500/50 rounded-xl p-4 text-center transition-colors cursor-pointer bg-black/20" id="dropzone-attachments">
+                <input type="file" id="input-attachment-file" accept="image/*" multiple class="hidden">
+                <label for="input-attachment-file" class="cursor-pointer block">
+                  <div class="w-10 h-10 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  </div>
+                  <div class="text-xs font-semibold text-slate-200">+ Upload Foto Nota / Struk Lampiran</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Bisa pilih beberapa foto langsung (JPG, PNG, WebP)</div>
+                </label>
+              </div>
+
+              <!-- List of Uploaded Attachment Cards in Form -->
+              <div id="form-attachments-container" class="space-y-2.5">
+                <!-- Injected via js/app.js -->
+              </div>
+            </div>
+
           </form>
         </div>
 
@@ -450,6 +478,17 @@
       </div>
     </main>
 
+  </div>
+
+  <!-- Lightbox Modal for Attachment Photo Inspection -->
+  <div id="image-lightbox-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center">
+      <button id="btn-close-lightbox" class="absolute -top-10 right-0 text-white hover:text-rose-400 text-sm font-semibold flex items-center gap-1.5 p-2 transition-colors">
+        ✕ Tutup
+      </button>
+      <div id="lightbox-caption" class="text-sm font-medium text-slate-300 mb-3 text-center"></div>
+      <img id="lightbox-img" src="" alt="Bukti Nota" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/10">
+    </div>
   </div>
 
   <!-- APPLICATION JAVASCRIPT MODULES -->
