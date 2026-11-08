@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="minGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+    <radialGradient id="minGlow" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="240" fill="url(#minGrad)"/>
+  <rect width="800" height="240" fill="url(#minGlow)"/>
+  <!-- Elegant geometric accent lines -->
+  <line x1="0" y1="200" x2="800" y2="120" stroke="#334155" stroke-width="1" opacity="0.4"/>
+  <line x1="0" y1="220" x2="800" y2="140" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/>
+</svg>
